@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>주말 이야기 공감판</title>
+<style>
+  :root{
+    --ink:#1D2940; --bg:#FBF8F1; --card:#FFFFFF; --line:#E6DFD0;
+    --joy:#F4B400; --fun:#34A853; --wow:#4285F4; --sad:#7E57C2; --angry:#E8453C;
+    --accent:#1D2940;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Malgun Gothic","맑은 고딕",sans-serif;background:var(--bg);color:var(--ink);font-size:18px}
+  header.bar{display:flex;align-items:center;gap:12px;padding:14px 22px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  h1{font-size:26px;margin:0;margin-right:auto}
+  .spacer{flex:1}
+  .btn{font:inherit;font-size:18px;padding:10px 18px;border-radius:12px;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
+  .btn:disabled{opacity:.35;cursor:default}
+  .btn.primary{background:var(--ink);color:#fff}
+  .btn.big{font-size:22px;padding:14px 26px}
+  .btn.pulse{animation:pulse 1.2s infinite}
+  @keyframes pulse{50%{transform:scale(1.05)}}
+  main{padding:22px;max-width:1280px;margin:0 auto}
+  .drop{border:3px dashed #B9B09C;border-radius:18px;padding:26px;text-align:center;background:#fff;cursor:pointer}
+  .drop.over{border-color:var(--ink);background:#F1F4FA}
+  .drop p{margin:6px 0;color:#5a5a5a}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;margin-top:20px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+  .ph{position:relative;aspect-ratio:4/3;background:#eee}
+  .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .no{position:absolute;left:10px;top:10px;background:var(--ink);color:#fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:bold}
+  .tag{position:absolute;right:10px;top:10px;background:#FFF3C4;padding:4px 10px;border-radius:8px;font-size:14px}
+  .fields{padding:14px;display:flex;flex-direction:column;gap:10px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label{display:flex;flex-direction:column;gap:4px;font-size:15px;color:#444}
+  input,textarea,select{font:inherit;font-size:17px;padding:8px 10px;border:1.5px solid #CFC7B5;border-radius:10px;color:var(--ink);background:#fff}
+  textarea{resize:vertical;min-height:60px}
+  .card-actions{display:flex;justify-content:flex-end;padding:0 14px 14px}
+  .small{font-size:14px;padding:6px 12px}
+  .side{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:20px}
+  .side h3{margin:8px 0 6px;font-size:18px}
+  .side p{margin:6px 0;color:#555;font-size:15px}
+  .side ol{padding-left:22px;color:#444;font-size:15px}
+  /* 수업 화면 */
+  .stage{display:grid;grid-template-columns:1.1fr 1fr;gap:22px;align-items:start}
+  .photo{background:#fff;border-radius:18px;overflow:hidden;border:1px solid var(--line)}
+  .photo img{width:100%;max-height:60vh;object-fit:contain;display:block;background:#f2f2f2}
+  .talk{background:#fff;border-radius:18px;padding:22px;border:1px solid var(--line)}
+  .talk .who{font-size:30px;font-weight:bold;margin:0 0 6px}
+  .talk .kw{display:inline-block;background:#FFF3C4;padding:6px 14px;border-radius:10px;font-size:24px;margin:6px 0 14px}
+  .talk .story{font-size:26px;line-height:1.6;margin:8px 0 14px}
+  .talk .feel{color:#666;font-size:18px}
+  .listen{margin-top:20px;background:#fff;border-radius:18px;padding:18px;border:1px solid var(--line)}
+  .listen h3{margin:0 0 10px;font-size:20px}
+  .lrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .emos{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+  .emo{background:#fff;border:3px solid #ddd;border-radius:18px;padding:12px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;font:inherit;color:var(--ink)}
+  .emo svg{width:72px;height:72px}
+  .emo .t{font-size:18px;font-weight:bold}
+  .emo .s{font-size:13px;color:#666;min-height:18px}
+  .emo.hint{border-color:var(--ink);background:#F4F6FB}
+  .emo.picked{box-shadow:0 0 0 4px rgba(0,0,0,.15) inset}
+  .navrow{display:flex;gap:12px;margin-top:20px;align-items:center}
+  .bubble{position:fixed;left:50%;top:34%;transform:translate(-50%,-50%);z-index:50;pointer-events:none;animation:pop 2.6s ease forwards}
+  .bubble div{background:#fff;border:5px solid var(--c);border-radius:28px;padding:20px 30px;font-size:34px;font-weight:bold;box-shadow:0 10px 30px rgba(0,0,0,.18);text-align:center;max-width:80vw}
+  .bubble small{display:block;font-size:18px;color:#555;font-weight:normal;margin-bottom:4px}
+  @keyframes pop{0%{opacity:0;transform:translate(-50%,-40%) scale(.7)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}18%{transform:translate(-50%,-50%) scale(1)}85%{opacity:1}100%{opacity:0}}
+  /* 요약 */
+  .summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-top:18px}
+  .sum{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;gap:12px}
+  .sum img{width:110px;height:82px;object-fit:cover;border-radius:10px;flex:none;background:#eee}
+  .sum b{display:block;font-size:19px;margin-bottom:4px}
+  .sum span{display:block;font-size:16px;color:#444;margin-top:2px}
+  .sum .said{color:var(--ink);font-weight:bold;background:#EEF3FB;padding:3px 8px;border-radius:8px;display:inline-block;margin-top:6px}
+  .empty{color:#777;text-align:center;padding:30px}
+  @media (max-width:820px){ .stage{grid-template-columns:1fr} .emos{grid-template-columns:repeat(3,1fr)} }
+</style>
+</head>
+<body>
+<header class="bar" id="top"></header>
+<main id="app"></main>
+
+<script>
+/* ============ 데이터 저장 (이 컴퓨터의 이 브라우저, IndexedDB) ============ */
+const DB = (() => {
+  let db;
+  const open = () => new Promise((res, rej) => {
+    const r = indexedDB.open('weekendEmpathy', 1);
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      if (!d.objectStoreNames.contains('stories')) d.createObjectStore('stories', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta');
+    };
+    r.onsuccess = () => { db = r.result; res(); };
+    r.onerror = () => rej(r.error);
+  });
+  const tx = (store, mode, fn) => new Promise((res, rej) => {
+    const t = db.transaction(store, mode);
+    const out = fn(t.objectStore(store));
+    t.oncomplete = () => res(out && out.result);
+    t.onerror = () => rej(t.error);
+  });
+  return {
+    open,
+    all: () => tx('stories', 'readonly', s => s.getAll()),
+    put: (rec) => tx('stories', 'readwrite', s => s.put(rec)),
+    del: (id) => tx('stories', 'readwrite', s => s.delete(id)),
+    getMeta: (k) => tx('meta', 'readonly', s => s.get(k)),
+    setMeta: (k, v) => tx('meta', 'readwrite', s => s.put(v, k)),
+  };
+})();
+
+/* ============ 상태 ============ */
+const S = { mode: 'setup', stories: [], idx: 0, listener: null, said: {}, students: '' };
+const FEEL = [
+  { f: '기쁨', t: '기쁘구나, 축하해!', s: '기뻤어요' },
+  { f: '재미', t: '재미있었겠다!', s: '재미있었어요' },
+  { f: '놀람', t: '놀랐구나, 신기하다!', s: '놀랐어요' },
+  { f: '슬픔', t: '속상했구나, 괜찮아.', s: '속상했어요' },
+  { f: '화남', t: '화났구나, 진정해.', s: '화났어요' },
+];
+const FACE = {
+  기쁨:'<circle cx="36" cy="36" r="30" fill="#F4B400"/><circle cx="26" cy="30" r="3.5" fill="#333"/><circle cx="46" cy="30" r="3.5" fill="#333"/><path d="M22 44 Q36 58 50 44" stroke="#333" stroke-width="3.5" fill="none" stroke-linecap="round"/>',
+  재미:'<circle cx="36" cy="36" r="30" fill="#34A853"/><circle cx="26" cy="30" r="3.5" fill="#333"/><circle cx="46" cy="30" r="3.5" fill="#333"/><path d="M20 42 Q36 66 52 42 Z" fill="#333"/>',
+  놀람:'<circle cx="36" cy="36" r="30" fill="#4285F4"/><circle cx="26" cy="30" r="4" fill="#333"/><circle cx="46" cy="30" r="4" fill="#333"/><circle cx="36" cy="50" r="6" fill="#333"/>',
+  슬픔:'<circle cx="36" cy="36" r="30" fill="#7E57C2"/><circle cx="26" cy="30" r="3.5" fill="#333"/><circle cx="46" cy="30" r="3.5" fill="#333"/><path d="M22 54 Q36 42 50 54" stroke="#333" stroke-width="3.5" fill="none" stroke-linecap="round"/>',
+  화남:'<circle cx="36" cy="36" r="30" fill="#E8453C"/><path d="M18 26 L32 30 M54 26 L40 30" stroke="#333" stroke-width="3.5" stroke-linecap="round"/><circle cx="26" cy="36" r="3.5" fill="#333"/><circle cx="46" cy="36" r="3.5" fill="#333"/><path d="M24 52 Q36 44 48 52" stroke="#333" stroke-width="3.5" fill="none" stroke-linecap="round"/>',
+};
+const app = document.getElementById('app');
+const top = document.getElementById('top');
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const today = () => { const d = new Date(); return `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()}`; };
+const urlOf = s => s.img ? (s._url || (s._url = URL.createObjectURL(s.img))) : '';
+
+/* 예시 그림(실제 사진이 없을 때 보여 주는 용도) */
+function exampleImage() {
+  const c = document.createElement('canvas'); c.width = 800; c.height = 600;
+  const x = c.getContext('2d');
+  x.fillStyle = '#CDE8F7'; x.fillRect(0, 0, 800, 600);
+  x.fillStyle = '#7CC6E8'; x.fillRect(0, 420, 800, 180);
+  x.fillStyle = '#F28C28'; x.beginPath(); x.ellipse(400, 300, 190, 120, 0, 0, Math.PI*2); x.fill();
+  x.fillStyle = '#FFFFFF'; x.beginPath(); x.arc(400, 300, 30, 0, Math.PI*2); x.fill();
+  x.fillStyle = '#333'; x.font = 'bold 48px sans-serif'; x.textAlign = 'center';
+  x.fillText('금붕어 잡기 (예시)', 400, 110);
+  return new Promise(r => c.toBlob(b => r(b), 'image/png'));
+}
+
+function say(text) {
+  if (!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ko-KR'; u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+function chime() {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.value = 660; o.connect(g); g.connect(ac.destination);
+    g.gain.setValueAtTime(0.15, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.4);
+    o.start(); o.stop(ac.currentTime + 0.4);
+  } catch (e) {}
+}
+
+function sorted() { return [...S.stories].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); }
+function students() { return S.students.split(/[,\n]/).map(x => x.trim()).filter(Boolean); }
+
+/* ============ 렌더링 ============ */
+function render() {
+  if (S.mode === 'setup') renderSetup();
+  else if (S.mode === 'show') renderShow();
+  else renderDone();
+}
+
+function renderTop(right) {
+  top.innerHTML = `<h1>주말 이야기 공감판</h1><div class="spacer"></div>${right}`;
+}
+
+function renderSetup() {
+  renderTop(`<button class="btn primary big" id="start" ${S.stories.length ? '' : 'disabled'}>수업 시작</button>`);
+  app.innerHTML = `
+    <div class="drop" id="drop">
+      <p><b>주말 사진을 여기에 끌어 놓거나 눌러서 고르세요</b></p>
+      <p>여러 장을 한 번에 넣을 수 있어요.</p>
+      <input type="file" id="file" accept="image/*" multiple hidden>
+    </div>
+    <div class="grid">${S.stories.map(card).join('')}</div>
+    ${S.stories.length ? '' : '<div class="empty">아직 넣은 사진이 없어요. 사진을 넣으면 카드가 나와요.</div>'}
+    <div class="side">
+      <h3>우리 반 친구</h3>
+      <p>듣는 친구를 고를 때 이름 단추로 나와요. 쉼표나 줄바꿈으로 나눠 적어 주세요.</p>
+      <textarea id="students" rows="3" placeholder="예) 시후, 시온, 하린">${esc(S.students)}</textarea>
+      <h3>수업 순서</h3>
+      <ol>
+        <li>말하는 친구가 사진을 보고 주말 이야기를 해요. 어려우면 듣기 단추를 눌러요.</li>
+        <li>듣는 친구가 공감 말을 하거나 공감 단추를 눌러요.</li>
+        <li>‘다음 친구’로 넘어가요. 마지막에 오늘의 공감 기록이 나와요.</li>
+      </ol>
+      <p>사진과 이야기는 이 컴퓨터의 브라우저에만 저장돼요. 다른 기기에서는 다시 넣어야 해요.</p>
+    </div>`;
+
+  const drop = document.getElementById('drop'), file = document.getElementById('file');
+  drop.onclick = () => file.click();
+  file.onchange = () => addFiles(file.files);
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); };
+  document.getElementById('students').oninput = e => { S.students = e.target.value; DB.setMeta('students', S.students); };
+  const st = document.getElementById('start');
+  if (st) st.onclick = () => { S.mode = 'show'; S.idx = 0; S.listener = null; S.said = {}; render(); };
+
+  app.querySelectorAll('[data-k]').forEach(el => {
+    el.oninput = () => {
+      const s = S.stories.find(x => x.id === el.dataset.id);
+      s[el.dataset.k] = el.value;
+      DB.put(stripUrl(s));
+    };
+  });
+  app.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    const id = b.dataset.del;
+    S.stories = S.stories.filter(x => x.id !== id);
+    await DB.del(id); render();
+  });
+  app.querySelectorAll('[data-up]').forEach(b => b.onclick = () => move(b.dataset.up, -1));
+  app.querySelectorAll('[data-down]').forEach(b => b.onclick = () => move(b.dataset.down, 1));
+}
+
+function stripUrl(s) { const { _url, ...rest } = s; return rest; }
+
+function card(s, i) {
+  return `<article class="card">
+    <div class="ph"><img src="${urlOf(s)}" alt="${esc(s.name || '주말 사진')}"><span class="no">${i + 1}</span>${s.example ? '<span class="tag">예시</span>' : ''}</div>
+    <div class="fields">
+      <div class="row2">
+        <label>누구의 이야기<input data-id="${s.id}" data-k="name" value="${esc(s.name)}" placeholder="이름"></label>
+        <label>한 일(낱말 칸)<input data-id="${s.id}" data-k="keyword" value="${esc(s.keyword)}" placeholder="예) 금붕어 잡기"></label>
+      </div>
+      <label>주말 이야기 문장<textarea data-id="${s.id}" data-k="story" placeholder="예) 주말에 금붕어를 잡았어요.">${esc(s.story)}</textarea></label>
+      <label>그때 기분<select data-id="${s.id}" data-k="feeling">
+        <option value="">고르기</option>
+        ${FEEL.map(x => `<option value="${x.f}" ${x.f === s.feeling ? 'selected' : ''}>${x.s}</option>`).join('')}
+      </select></label>
+    </div>
+    <div class="card-actions">
+      <button class="btn small" data-up="${s.id}" ${i === 0 ? 'disabled' : ''}>▲</button>
+      <button class="btn small" data-down="${s.id}" ${i === S.stories.length - 1 ? 'disabled' : ''}>▼</button>
+      <button class="btn small" data-del="${s.id}">지우기</button>
+    </div>
+  </article>`;
+}
+
+async function addFiles(files) {
+  const arr = [...files].filter(f => f.type.startsWith('image/'));
+  for (const f of arr) {
+    const rec = { id: uid(), order: S.stories.length, img: f, name: '', keyword: '', story: '', feeling: '' };
+    S.stories.push(rec);
+    await DB.put(rec);
+  }
+  render();
+}
+
+async function move(id, dir) {
+  const list = sorted();
+  const i = list.findIndex(x => x.id === id), j = i + dir;
+  if (j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  list.forEach((s, k) => { s.order = k; });
+  for (const s of list) await DB.put(stripUrl(s));
+  S.stories = list; render();
+}
+
+/* 수업 화면 */
+function renderShow() {
+  const list = sorted();
+  const s = list[S.idx];
+  if (!s) { S.mode = 'setup'; render(); return; }
+  const sts = students();
+  const hintF = s.feeling;
+  const done = S.idx === list.length - 1;
+  renderTop(`<button class="btn" id="back">준비 화면</button>`);
+  app.innerHTML = `
+    <div class="stage">
+      <section class="photo"><img src="${urlOf(s)}" alt=""></section>
+      <section class="talk">
+        <p class="who">${esc(s.name || '친구')} <span style="font-size:18px;color:#777">(${S.idx + 1} / ${list.length})</span></p>
+        <span class="kw">${esc(s.keyword || '')}</span>
+        <p class="story">${esc(s.story || '(문장을 적어 주세요)')}</p>
+        ${s.feeling ? `<p class="feel">그때 기분: ${esc(FEEL.find(x => x.f === s.feeling)?.s || '')}</p>` : ''}
+        <div class="lrow"><button class="btn" id="speak">🔊 듣기</button></div>
+      </section>
+    </div>
+    <section class="listen">
+      <h3>듣는 친구</h3>
+      <div class="lrow">
+        ${sts.map(n => `<button class="btn ${S.listener === n ? 'primary' : ''}" data-l="${esc(n)}">${esc(n)}</button>`).join('')}
+        ${sts.length ? `<button class="btn" id="pick">🎲 뽑기</button>` : ''}
+        <span style="color:#666;font-size:15px">${sts.length ? '' : '‘우리 반 친구’에 이름을 적으면 단추로 나와요.'}</span>
+      </div>
+      <h3>공감 단추 <span style="font-weight:normal;font-size:15px;color:#666">(${S.listener ? esc(S.listener) + ' 차례' : '듣는 친구를 고르세요'})</span></h3>
+      <div class="emos">
+        ${FEEL.map(x => `<button class="emo ${x.f === hintF ? 'hint' : ''} ${S.said[s.id]?.f === x.f ? 'picked' : ''}" data-f="${x.f}">
+          <svg viewBox="0 0 72 72" aria-hidden="true">${FACE[x.f]}</svg>
+          <span class="t">${x.t}</span>
+          <span class="s">${x.f === hintF ? '이 이야기에 어울려요' : ''}</span>
+        </button>`).join('')}
+      </div>
+      ${S.said[s.id] ? `<p style="margin:12px 0 0;font-size:18px">이 친구에게 한 공감: <b>${S.said[s.id].by ? esc(S.said[s.id].by) + ' → ' : ''}${esc(S.said[s.id].t)}</b></p>` : ''}
+      <div class="navrow">
+        <button class="btn big" id="prev" ${S.idx ? '' : 'disabled'}>이전 친구</button>
+        <div class="spacer"></div>
+        <button class="btn primary big ${done ? 'pulse' : ''}" id="next">${done ? '오늘의 공감 보기' : '다음 친구'}</button>
+      </div>
+    </section>`;
+
+  document.getElementById('back').onclick = () => { S.mode = 'setup'; render(); };
+  document.getElementById('speak').onclick = () => say(`${s.name ? s.name + '의 ' : ''}주말 이야기. ${s.story || s.keyword || ''}`);
+  app.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { S.listener = b.dataset.l; render(); });
+  const pk = document.getElementById('pick');
+  if (pk) pk.onclick = () => { S.listener = sts[Math.floor(Math.random() * sts.length)]; render(); };
+  app.querySelectorAll('.emo').forEach(b => b.onclick = () => {
+    const x = FEEL.find(y => y.f === b.dataset.f);
+    S.said[s.id] = { t: x.t, f: x.f, by: S.listener };
+    chime();
+    setTimeout(() => say(x.t), 350);
+    showBubble(x);
+    render();
+  });
+  document.getElementById('prev').onclick = () => { S.idx--; S.listener = null; render(); };
+  document.getElementById('next').onclick = () => {
+    if (!done) { S.idx++; S.listener = null; render(); }
+    else { S.mode = 'done'; render(); }
+  };
+}
+
+function showBubble(x) {
+  const b = document.createElement('div');
+  b.className = 'bubble';
+  const col = { 기쁨: 'var(--joy)', 재미: 'var(--fun)', 놀람: 'var(--wow)', 슬픔: 'var(--sad)', 화남: 'var(--angry)' }[x.f];
+  b.innerHTML = `<div style="--c:${col}">${S.listener ? `<small>${esc(S.listener)}</small>` : ''}${esc(x.t)}</div>`;
+  document.body.appendChild(b);
+  setTimeout(() => b.remove(), 2600);
+}
+
+/* 요약 */
+function renderDone() {
+  const list = sorted();
+  renderTop(`<button class="btn" id="again">처음부터</button><button class="btn primary" id="back">준비 화면</button>`);
+  app.innerHTML = `
+    <h2 style="margin:0 0 4px">오늘의 공감 <span style="font-size:16px;color:#666;font-weight:normal">${today()}</span></h2>
+    <div class="summary">${list.map(s => {
+      const r = S.said[s.id];
+      return `<div class="sum">
+        <img src="${urlOf(s)}" alt="">
+        <div>
+          <b>${esc(s.name || '친구')}의 주말</b>
+          <span>${esc(s.keyword || s.story || '')}</span>
+          ${r ? `<span class="said">${r.by ? esc(r.by) + ': ' : ''}${esc(r.t)}</span>` : '<span>공감 기록이 없어요</span>'}
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  document.getElementById('again').onclick = () => { S.mode = 'show'; S.idx = 0; S.listener = null; S.said = {}; render(); };
+  document.getElementById('back').onclick = () => { S.mode = 'setup'; render(); };
+}
+
+/* ============ 시작 ============ */
+(async () => {
+  await DB.open();
+  S.students = (await DB.getMeta('students')) || '';
+  const saved = await DB.all();
+  if (saved && saved.length) {
+    S.stories = saved.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  } else {
+    const blob = await exampleImage();
+    const ex = { id: 'example', example: true, img: blob, order: 0, name: '시후', keyword: '금붕어 잡기', story: '나는 주말에 금붕어를 잡았어요. 정말 재미있었어요.', feeling: '재미' };
+    S.stories = [ex];
+    await DB.put(ex);
+  }
+  render();
+})();
+</script>
+</body>
+</html>
