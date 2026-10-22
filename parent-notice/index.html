@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>알림장 학부모 회신 만들기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{ --ink:#2a3042; --red:#c8312b; --paper:#fbfcfe; --line:#dfe6f0; --muted:#6b7385; }
+  *{box-sizing:border-box}
+  body{margin:0;background:#e9edf3;color:var(--ink);font-family:"Noto Sans KR","Malgun Gothic",sans-serif}
+  /* ---------- 조작 패널 (인쇄 때 숨김) ---------- */
+  .panel{max-width:980px;margin:16px auto;padding:0 16px}
+  .panel h1{font-size:22px;margin:6px 0 12px}
+  .box{background:#fff;border:1px solid #d6dce6;border-radius:14px;padding:14px 16px;margin-bottom:12px}
+  .drop{border:3px dashed #aab4c6;border-radius:14px;padding:22px;text-align:center;cursor:pointer;background:#f7f9fc}
+  .drop.over{border-color:var(--ink);background:#eef3fb}
+  .drop b{font-size:18px}
+  .drop p{margin:6px 0;color:var(--muted);font-size:14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted);flex:1;min-width:150px}
+  input[type=text],textarea{font:inherit;font-size:15px;padding:8px 10px;border:1.5px solid #c6cedc;border-radius:9px;color:var(--ink);background:#fff}
+  textarea{width:100%;min-height:90px;resize:vertical}
+  .btn{font:inherit;font-size:15px;padding:9px 16px;border-radius:10px;border:2px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer}
+  .btn.primary{background:var(--ink);color:#fff}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .msg{font-size:13.5px;color:#2f6b3f;margin-top:8px;min-height:18px;white-space:pre-line}
+  .msg.warn{color:#a35a00}
+  .hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+  /* ---------- A4 시트 ---------- */
+  #sheets{transform-origin:top center}
+  .sheet{width:794px;height:1123px;margin:0 auto 22px;position:relative;overflow:hidden;
+    padding:44px 50px 40px;background-color:var(--paper);
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:24px 24px;box-shadow:0 4px 18px rgba(30,40,70,.18)}
+  .kicker{font-size:12px;color:var(--muted)}
+  .stamp{position:absolute;right:48px;top:40px;transform:rotate(6deg);border:3px solid var(--red);color:var(--red);
+    font-family:"Nanum Pen Script",cursive;font-size:34px;padding:2px 14px;border-radius:6px;background:#fff9}
+  .hello{font-size:18px;font-weight:700;margin:8px 0 2px}
+  .maintitle{font-family:"Nanum Pen Script",cursive;font-size:60px;line-height:1.05;margin:2px 0 0}
+  .sub{font-size:14px;color:var(--muted);margin:2px 0 10px;padding-bottom:8px;border-bottom:1.5px solid #c9d1de}
+  .cards{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:14px;height:calc(100% - 178px)}
+  .card{background:#fff;border:1px solid #dfe3ea;border-radius:10px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .ph{height:46%;flex:none;background:#eceff4;position:relative;cursor:pointer;overflow:hidden}
+  .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .ph .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8b93a5;font-size:13px;text-align:center;padding:8px}
+  .ph.dragover{outline:3px solid #4a7be0;outline-offset:-3px}
+  .body{flex:1;padding:8px 12px 8px;overflow:hidden;font-size:12px;line-height:1.45}
+  .ctitle{font-family:"Nanum Pen Script",cursive;font-size:2.35em;line-height:1;border-bottom:2px solid var(--ink);display:inline-block;margin:0 0 4px;padding-bottom:1px;min-width:3em}
+  .lab{font-size:.88em;color:var(--muted);margin-top:3px}
+  .act{margin:1px 0 4px}
+  .circ{display:inline-block;border:1.6px solid var(--red);color:var(--red);font-family:"Nanum Pen Script",cursive;font-size:1.45em;line-height:1;padding:2px 12px;border-radius:50%;margin-top:3px}
+  .grow{font-family:"Nanum Pen Script",cursive;color:var(--red);font-size:1.6em;line-height:1.15;margin:2px 0 3px}
+  .skill{font-size:.85em;color:var(--muted);border-top:1px dotted #b8c0cf;padding-top:3px;margin-top:2px}
+  [contenteditable]{outline:none}
+  [contenteditable]:hover{background:rgba(74,123,224,.07)}
+  [contenteditable]:focus{background:rgba(74,123,224,.12)}
+  [data-ph]:empty:before{content:attr(data-ph);color:#b3bac8}
+  .next{position:absolute;left:50px;right:50px;bottom:16px;text-align:right;font-family:"Nanum Pen Script",cursive;color:var(--red);font-size:22px}
+  /* 2쪽 회신지 */
+  .q{font-size:13.5px;margin:12px 0 6px}
+  .chk{display:grid;grid-template-columns:repeat(3,auto);gap:8px 22px;justify-content:start;font-size:13px;margin:8px 0 8px 12px}
+  .chk span:before{content:"";display:inline-block;width:15px;height:15px;border:1.6px solid #556;border-radius:3px;margin-right:7px;vertical-align:-3px;background:#fff}
+  .lines{margin:6px 0 4px}
+  .lines i{display:block;height:40px;border-bottom:1.3px solid #b9c1cf}
+  .scale{display:flex;align-items:center;gap:16px;margin:12px 0 4px 8px;font-size:12.5px;color:var(--muted)}
+  .scale b{width:44px;height:44px;border:2px solid #333;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink);font-weight:500;background:#fff}
+  .foot{position:absolute;left:50px;right:50px;bottom:62px;font-size:13px}
+  .thanks{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-family:"Nanum Pen Script",cursive;color:var(--red);font-size:28px}
+  .school{position:absolute;right:50px;bottom:16px;font-size:11px;color:var(--muted)}
+  @media print{
+    @page{size:A4;margin:0}
+    body{background:#fff}
+    .panel{display:none}
+    #sheets{zoom:1 !important;transform:none !important}
+    .sheet{margin:0;box-shadow:none;break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    [contenteditable]:hover,[contenteditable]:focus{background:none}
+    [data-ph]:empty:before{content:""}
+    .ph .empty{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="panel">
+  <h1>알림장 학부모 회신 만들기</h1>
+  <div class="box">
+    <div class="drop" id="drop">
+      <b>사진과 글을 여기에 한꺼번에 끌어 놓으세요</b>
+      <p>사진(JPG·PNG·HEIC·WEBP 등)과 글 파일(TXT·MD·DOCX·HWPX 등)을 함께 올리면 자동으로 알림장이 만들어져요. 사진은 파일 이름 순서대로 칸에 들어가요.</p>
+      <input type="file" id="file" multiple hidden>
+    </div>
+    <p class="hint">글은 파일 대신 아래 칸에 붙여 넣어도 돼요. 형식은 자유예요. 빈 줄이나 “1.”, “■”로 나눈 덩어리가 활동 한 칸이 돼요.</p>
+    <textarea id="paste" placeholder="여기에 글을 붙여 넣으세요 (예)&#10;하모니 연주&#10;색 악보를 보며 친구와 함께 핸드벨을 연주했습니다.&#10;“누구 차례예요?”를 말하며 순서대로 연주하는 힘이 자랐어요."></textarea>
+    <div class="msg" id="msg"></div>
+  </div>
+  <div class="box">
+    <div class="row">
+      <label>학생 이름(전체)<input type="text" id="name" placeholder="예) 홍길동"></label>
+      <label>학년<input type="text" id="grade" value="6학년"></label>
+      <label>회신 마감일<input type="text" id="due" placeholder="예) 10월 26일 월요일"></label>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <label>큰 제목<input type="text" id="title" value="함께 해내는 우리"></label>
+      <label>작은 제목<input type="text" id="subtitle" value="친구와 함께 해낸 날들"></label>
+      <label>학교·학급<input type="text" id="school" value="서울정문학교 6학년"></label>
+    </div>
+    <div class="btns" style="margin-top:12px">
+      <button class="btn primary" id="print">인쇄 / PDF로 저장</button>
+      <button class="btn" id="sample">예시 글 넣어 보기</button>
+      <button class="btn" id="reset">모두 지우기</button>
+    </div>
+    <p class="hint">미리보기의 글은 눌러서 바로 고칠 수 있어요. 사진은 눌러서 바꾸거나, 다른 칸으로 끌어 놓아 자리를 바꿀 수 있어요. 올린 사진과 글은 이 컴퓨터의 브라우저 안에서만 처리되고 어디에도 전송되지 않아요.</p>
+  </div>
+</div>
+<div id="sheets"></div>
+<input type="file" id="one" accept="image/*" hidden>
+
+<script>
+/* ================= 상태 ================= */
+const S = { name:'', grade:'6학년', due:'', title:'함께 해내는 우리', subtitle:'친구와 함께 해낸 날들', school:'서울정문학교 6학년',
+  cards:[{title:'',act:'',grow:'',skill:''}], photos:[], texts:[] };
+const $ = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const natural = (a,b)=>a.name.localeCompare(b.name,'ko',{numeric:true});
+
+/* 이름 → "지민이" 같은 부르는 이름 */
+function callName(full){
+  full=(full||'').trim(); if(!full) return '○○';
+  const given = full.length>=3 ? full.slice(1) : full;
+  const ch = given.charCodeAt(given.length-1);
+  const jong = ch>=0xAC00 && ch<=0xD7A3 ? (ch-0xAC00)%28 : 0;
+  return given + (jong ? '이' : '');
+}
+
+/* ================= 글 읽기 (어떤 형식이든) ================= */
+function decodeBuf(buf){
+  try{ return new TextDecoder('utf-8',{fatal:true}).decode(buf); }catch(e){}
+  try{ return new TextDecoder('euc-kr').decode(buf); }catch(e){}
+  return new TextDecoder().decode(buf);
+}
+const unesc = s => s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
+async function readTextFile(f){
+  const ext=(f.name.split('.').pop()||'').toLowerCase();
+  const buf=await f.arrayBuffer();
+  if(ext==='docx'||ext==='hwpx'){
+    if(!window.JSZip) throw new Error('압축 해제 도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.');
+    const zip=await JSZip.loadAsync(buf);
+    if(ext==='docx'){
+      const x=await zip.file('word/document.xml').async('string');
+      return unesc(x.replace(/<w:tab\/>/g,'\t').replace(/<w:br[^>]*\/>/g,'\n').replace(/<\/w:p>/g,'\n').replace(/<[^>]+>/g,''));
+    }
+    const names=Object.keys(zip.files).filter(n=>/^Contents\/section\d+\.xml$/.test(n)).sort();
+    let out='';
+    for(const n of names){
+      const x=await zip.file(n).async('string');
+      out+=unesc(x.replace(/<hp:lineBreak\/>/g,'\n').replace(/<hp:tab[^>]*\/>/g,'\t').replace(/<\/hp:p>/g,'\n').replace(/<[^>]+>/g,''))+'\n';
+    }
+    return out;
+  }
+  if(ext==='hwp'||ext==='pdf'||ext==='doc') throw new Error(f.name+': 이 형식은 읽을 수 없어요. 글을 복사해서 붙여 넣거나 DOCX·HWPX·TXT로 저장해 주세요.');
+  let t=decodeBuf(buf);
+  if(ext==='rtf') t=t.replace(/\\par[d]?/g,'\n').replace(/\\'[0-9a-f]{2}/gi,'').replace(/\\[a-z]+-?\d* ?/gi,'').replace(/[{}]/g,'');
+  if(ext==='html'||ext==='htm') t=unesc(t.replace(/<(br|\/p|\/div|\/li|\/h\d)[^>]*>/gi,'\n').replace(/<[^>]+>/g,''));
+  if(ext==='json'){ try{ t=flattenJson(JSON.parse(t)); }catch(e){} }
+  if(ext==='csv'||ext==='tsv') t=t.split(/\r?\n/).map(l=>l.split(/[,\t]/).map(c=>c.replace(/^"|"$/g,'')).join('\n')).join('\n\n');
+  return t;
+}
+function flattenJson(v){ if(Array.isArray(v)) return v.map(flattenJson).join('\n\n'); if(v&&typeof v==='object') return Object.values(v).map(flattenJson).join('\n'); return String(v); }
+
+/* ================= 글 → 칸 나누기 ================= */
+const FULL = { act:/^(?:[✎✏️📝]\s*)?이렇게\s*활동했어요\s*[:：]?\s*/, grow:/^이만큼\s*자랐어요\s*[:：]?\s*/, skill:/^함께\s*소통하는\s*힘\s*[·:：\-–]?\s*/ };
+const SHORT = { act:/^(?:활동\s*내용|활동|한\s*일)\s*[:：]\s*/, grow:/^(?:성장\s*한?\s*모습|성장|변화|모습)\s*[:：]\s*/, skill:/^(?:소통하는\s*힘|소통\s*역량|역량|힘)\s*[:：·]\s*/ };
+const BULLET = /^\s*(?:\d{1,2}\s*[.)\]]\s*|#{1,3}\s+|[■●▶◆▣◈☆★▷◎□▪]\s*|\[[^\]]+\]\s*$|【.+】\s*$|(?:활동|사진)\s*\d+\s*[.:)]\s*)/;
+const SKIP = /^(오늘의\s*알림장|\d학년$|.*학부모님께|.*학부모\s*회신|함께\s*해내는\s*우리$|친구와\s*함께\s*해낸\s*날들$|다음\s*장에)/;
+function labelOf(line){
+  for(const k of ['act','grow','skill']){ const m=line.match(FULL[k]); if(m) return {k,rest:line.slice(m[0].length),full:true}; }
+  for(const k of ['act','grow','skill']){ const m=line.match(SHORT[k]); if(m) return {k,rest:line.slice(m[0].length),full:false}; }
+  return null;
+}
+function splitSentences(t){ return (t.replace(/\s+/g,' ').trim().match(/[^.!?。]+[.!?。]?[”"’']?\s*/g)||[]).map(s=>s.trim()).filter(Boolean); }
+
+function parseText(raw){
+  const found={};
+  let lines=raw.replace(/\r/g,'').split('\n').map(l=>l.replace(/ /g,' ').trim());
+  // 머리글에서 학생 이름 찾기
+  for(const l of lines){ const m=l.match(/^(\S{2,4})\s*학부모님께/); if(m){ found.name=m[1]; break; } }
+  lines=lines.filter(l=>!SKIP.test(l));
+  // "이렇게 활동했어요" 바로 앞 줄은 제목으로 본다
+  const mark=new Set();
+  lines.forEach((l,i)=>{ const lb=labelOf(l); if(lb&&lb.full&&lb.k==='act'&&!lb.rest){ for(let j=i-1;j>=0;j--){ if(lines[j]){ if(!labelOf(lines[j])) mark.add(j); break; } } }});
+  lines.forEach((l,i)=>{ if(l&&BULLET.test(l)&&!labelOf(l)) mark.add(i); });
+  let blocks=[]; let cur=null;
+  if(mark.size){
+    let blank=false;
+    lines.forEach((l,i)=>{ if(!l){ blank=true; return; }
+      if(mark.has(i)){ cur={head:l.replace(BULLET,'').replace(/[\[\]【】]/g,'').trim(),lines:[]}; blocks.push(cur); }
+      else { if(!cur||(blank&&cur.lines.length&&!labelOf(l))){ cur={head:'',lines:[],loose:true}; blocks.push(cur);} cur.lines.push(l); }
+      blank=false; });
+  } else {
+    let buf=[]; const flush=()=>{ if(buf.length){ blocks.push({head:'',lines:buf,loose:true}); buf=[]; } };
+    lines.forEach(l=>{ if(!l) flush(); else buf.push(l); }); flush();
+    if(blocks.length===1 && blocks[0].lines.length>1 && !blocks[0].lines.some(labelOf)){ blocks=blocks[0].lines.map(l=>({head:'',lines:[l],loose:true})); }
+  }
+  const cards=blocks.map(b=>{
+    const c={title:b.head||'',act:'',grow:'',skill:''};
+    let L=b.lines.slice();
+    if(!c.title && b.loose && L.length>=2 && L[0].length<=16 && !/[다요.!?”"]$/.test(L[0]) && !labelOf(L[0])) c.title=L.shift();
+    let sec=null, any=false; const loose=[];
+    for(const l of L){
+      const lb=labelOf(l);
+      if(lb){ any=true; sec=lb.k; if(lb.rest) c[sec]+=(c[sec]?' ':'')+lb.rest; continue; }
+      if(sec) c[sec]+=(c[sec]?' ':'')+l; else loose.push(l);
+    }
+    if(loose.length){
+      const sents=splitSentences(loose.join(' '));
+      if(!any){
+        const sk=sents.findIndex(s=>/^함께\s*소통하는\s*힘/.test(s));
+        if(sk>=0){ c.skill=sents.splice(sk).join(' ').replace(FULL.skill,''); }
+        c.act=sents[0]||''; c.grow=sents.slice(1).join(' ');
+      } else c.act=(loose.join(' ')+' '+c.act).trim();
+    }
+    return c;
+  }).filter(c=>c.title||c.act||c.grow||c.skill);
+  found.cards=cards; return found;
+}
+
+/* ================= 사진 읽기 (어떤 형식이든) ================= */
+const IMG_EXT=/\.(jpe?g|png|gif|webp|bmp|avif|heic|heif|tiff?|jfif)$/i;
+const isImage = f => (f.type&&f.type.startsWith('image/')) || IMG_EXT.test(f.name);
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+async function toBitmap(blob){
+  try{ return await createImageBitmap(blob,{imageOrientation:'from-image'}); }catch(e){}
+  return await new Promise((res,rej)=>{ const u=URL.createObjectURL(blob); const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=u; });
+}
+async function loadPhoto(f){
+  let blob=f;
+  let bmp;
+  try{ bmp=await toBitmap(blob); }
+  catch(e){
+    if(/\.(heic|heif)$/i.test(f.name)||/heic|heif/.test(f.type)){
+      if(!window.heic2any) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js');
+      let out=await heic2any({blob:f,toType:'image/jpeg',quality:.9}); if(Array.isArray(out)) out=out[0];
+      bmp=await toBitmap(out);
+    } else throw new Error(f.name+': 사진을 열 수 없어요.');
+  }
+  const w=bmp.width||bmp.naturalWidth, h=bmp.height||bmp.naturalHeight;
+  const sc=Math.min(1,1400/Math.max(w,h));
+  const cv=document.createElement('canvas'); cv.width=Math.round(w*sc); cv.height=Math.round(h*sc);
+  const x=cv.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,cv.width,cv.height); x.drawImage(bmp,0,0,cv.width,cv.height);
+  return cv.toDataURL('image/jpeg',.9);
+}
+
+/* ================= 화면 그리기 ================= */
+function render(){
+  const n=Math.max(S.cards.length,S.photos.length,1);
+  while(S.cards.length<n) S.cards.push({title:'',act:'',grow:'',skill:''});
+  while(S.photos.length<n) S.photos.push(null);
+  const nm=callName(S.name), full=S.name||'○○○';
+  const pages=[]; for(let i=0;i<n;i+=4) pages.push([i,Math.min(n,i+4)]);
+  let html='';
+  pages.forEach(([a,b],pi)=>{
+    html+=`<section class="sheet"><div class="kicker">오늘의 알림장 · 학부모 회신</div><div class="stamp">${esc(S.grade)}</div>
+      <div class="hello">${esc(full)} 학부모님께</div><div class="maintitle">${esc(S.title)}</div><div class="sub">${esc(S.subtitle)}</div>
+      <div class="cards">`;
+    for(let i=a;i<b;i++){
+      const c=S.cards[i];
+      html+=`<div class="card" data-i="${i}">
+        <div class="ph" draggable="true" data-i="${i}">${S.photos[i]?`<img src="${S.photos[i]}" alt="" draggable="false">`:`<div class="empty">사진을 끌어 놓거나<br>눌러서 올려 주세요</div>`}</div>
+        <div class="body">
+          <div class="ctitle" contenteditable data-i="${i}" data-f="title" data-ph="활동 이름">${esc(c.title)}</div>
+          <div class="lab">✎ 이렇게 활동했어요</div>
+          <div class="act" contenteditable data-i="${i}" data-f="act" data-ph="활동 내용을 적어 주세요">${esc(c.act)}</div>
+          <div class="circ">이만큼 자랐어요</div>
+          <div class="grow" contenteditable data-i="${i}" data-f="grow" data-ph="자란 모습을 적어 주세요">${esc(c.grow)}</div>
+          <div class="skill" contenteditable data-i="${i}" data-f="skill" data-ph="함께 소통하는 힘 · ">${c.skill?'함께 소통하는 힘 · '+esc(c.skill):''}</div>
+        </div></div>`;
+    }
+    html+=`</div>${pi===pages.length-1?`<div class="next">다음 장에 ${esc(nm)}의 활동 모습을 보신 마음과 집 이야기를 들려주세요 →</div>`:''}</section>`;
+  });
+  html+=`<section class="sheet"><div class="kicker">오늘의 알림장 · 학부모 회신지</div><div class="stamp">${esc(S.grade)}</div>
+    <div class="maintitle" style="font-size:46px;margin-top:14px;max-width:560px">${esc(nm)}의 집 이야기를 들려주세요</div>
+    <div class="sub" style="border:0;font-size:13.5px;margin-bottom:0">학교에서 본 모습에 집에서의 모습이 더해지면,<br>${esc(nm)}의 성장 이야기가 완성됩니다.</div>
+    <div class="q" style="margin-top:14px"><b>회신 부탁드려요</b> · ${esc(S.due||'○월 ○일 ○요일')}까지 아이 편으로 보내 주세요.</div>
+    <div class="q">① 앞장의 학교 모습처럼, 요즘 집이나 일상에서도 조금씩 보이는 모습에 ✓ 해 주세요. (여러 개 가능)</div>
+    <div class="chk"><span contenteditable>내 차례 지키며 함께하기</span><span contenteditable>정해진 약속 규칙 지키기</span><span contenteditable>가족 표정 살피고 공감하기</span><span contenteditable>작은 심부름 역할 해내기</span><span contenteditable>아직은 지켜보는 중이에요</span></div>
+    <div class="q">② 위에서 ✓ 하신 것처럼 요즘 집에서 대견했거나 조금씩 달라진 ${esc(nm)}의 모습이 있다면 들려주세요.</div>
+    <div class="lines"><i></i><i></i><i></i></div>
+    <div class="q">③ 앞장에 소개된 것처럼 친구와 어울려 소통하고 역할을 해보는 수업 활동에 얼마나 만족하시나요?</div>
+    <div class="lines"><i></i><i></i></div>
+    <div class="q">④ 이번 학기 학교 교육활동에 얼마나 만족하시나요?</div>
+    <div class="scale"><span>매우 아쉬움</span><b>1</b><b>2</b><b>3</b><b>4</b><b>5</b><span>매우 만족</span></div>
+    <div class="q">⑤ 이번 활동 소식을 받아보며 좋았던 점이나 선생님께 전하고 싶은 말씀을 적어 주세요.</div>
+    <div class="lines"><i></i><i></i><i></i></div>
+    <div class="foot">학생 이름: ${esc(full)} &nbsp;·&nbsp; 보호자 성함 ____________ &nbsp;·&nbsp; 작성일 _____._____._____</div>
+    <div class="thanks">소중한 이야기 감사합니다.</div><div class="school">${esc(S.school)}</div></section>`;
+  $('sheets').innerHTML=html;
+  bindSheets(); fitAll(); scaleSheets();
+}
+function fitCard(card){
+  const body=card.querySelector('.body'); let fs=12; body.style.fontSize=fs+'px';
+  while(body.scrollHeight>body.clientHeight+1 && fs>7){ fs-=0.5; body.style.fontSize=fs+'px'; }
+}
+const fitAll=()=>document.querySelectorAll('.card').forEach(fitCard);
+function scaleSheets(){ const z=Math.min(1,(window.innerWidth-24)/794); $('sheets').style.zoom=z; }
+window.addEventListener('resize',scaleSheets);
+
+let swapFrom=null, replaceIdx=null;
+function bindSheets(){
+  document.querySelectorAll('[contenteditable][data-f]').forEach(el=>{
+    el.addEventListener('input',()=>{
+      const i=+el.dataset.i,f=el.dataset.f; let t=el.innerText.replace(/\n+/g,' ').trim();
+      if(f==='skill') t=t.replace(/^함께\s*소통하는\s*힘\s*[·:：\-–]?\s*/,'');
+      S.cards[i][f]=t; fitCard(el.closest('.card'));
+    });
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); } });
+  });
+  document.querySelectorAll('.ph').forEach(el=>{
+    const i=+el.dataset.i;
+    el.addEventListener('click',()=>{ replaceIdx=i; $('one').value=''; $('one').click(); });
+    el.addEventListener('dragstart',e=>{ swapFrom=i; e.dataTransfer.setData('text/plain','swap'); });
+    el.addEventListener('dragover',e=>{ e.preventDefault(); el.classList.add('dragover'); });
+    el.addEventListener('dragleave',()=>el.classList.remove('dragover'));
+    el.addEventListener('drop',async e=>{
+      e.preventDefault(); e.stopPropagation(); el.classList.remove('dragover');
+      if(e.dataTransfer.files&&e.dataTransfer.files.length){ const f=[...e.dataTransfer.files].find(isImage); if(f){ try{ S.photos[i]=await loadPhoto(f); render(); }catch(err){ say(err.message,true); } } return; }
+      if(swapFrom!==null&&swapFrom!==i){ [S.photos[swapFrom],S.photos[i]]=[S.photos[i],S.photos[swapFrom]]; swapFrom=null; render(); }
+    });
+  });
+}
+
+/* ================= 올리기 · 붙여넣기 ================= */
+function say(t,warn){ const m=$('msg'); m.textContent=t; m.className='msg'+(warn?' warn':''); }
+async function handleFiles(list){
+  const files=[...list]; if(!files.length) return;
+  const imgs=files.filter(isImage).sort(natural), txts=files.filter(f=>!isImage(f)).sort(natural);
+  const notes=[];
+  if(imgs.length){
+    say('사진을 불러오는 중이에요…');
+    const out=[]; for(const f of imgs){ try{ out.push(await loadPhoto(f)); }catch(e){ notes.push(e.message); } }
+    S.photos=out;
+    notes.unshift('사진 '+out.length+'장을 넣었어요.');
+  }
+  if(txts.length){
+    let all=''; for(const f of txts){ try{ all+=await readTextFile(f)+'\n\n'; }catch(e){ notes.push(e.message); } }
+    if(all.trim()){ $('paste').value=all.trim(); applyText(all); notes.push('글 파일 '+txts.length+'개를 읽었어요.'); }
+  }
+  render();
+  say(notes.join('\n'), notes.some(n=>/없어요|못했어요|읽을/.test(n)));
+}
+function applyText(raw){
+  const r=parseText(raw);
+  if(r.name && !S.name){ S.name=r.name; $('name').value=r.name; }
+  if(r.cards.length){ S.cards=r.cards; }
+}
+$('drop').addEventListener('click',()=>$('file').click());
+$('file').addEventListener('change',e=>handleFiles(e.target.files));
+['dragover','dragenter'].forEach(ev=>document.addEventListener(ev,e=>{ if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){ e.preventDefault(); $('drop').classList.add('over'); } }));
+['dragleave','drop'].forEach(ev=>document.addEventListener(ev,e=>{ if(ev==='dragleave'&&e.relatedTarget) return; $('drop').classList.remove('over'); }));
+document.addEventListener('drop',e=>{ if(e.defaultPrevented) return; if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length){ e.preventDefault(); handleFiles(e.dataTransfer.files); } });
+$('one').addEventListener('change',async e=>{ const f=e.target.files[0]; if(f&&replaceIdx!==null){ try{ S.photos[replaceIdx]=await loadPhoto(f); render(); }catch(err){ say(err.message,true); } } });
+let pt; $('paste').addEventListener('input',()=>{ clearTimeout(pt); pt=setTimeout(()=>{ const v=$('paste').value; if(v.trim()){ applyText(v); render(); say('글을 칸에 맞게 나눴어요. '+S.cards.length+'칸'); } },400); });
+[['name','name'],['grade','grade'],['due','due'],['title','title'],['subtitle','subtitle'],['school','school']].forEach(([id,k])=>{
+  $(id).addEventListener('input',e=>{ S[k]=e.target.value; render(); });
+});
+$('print').addEventListener('click',()=>window.print());
+$('sample').addEventListener('click',()=>{
+  const t=`하모니 연주
+색 악보를 보며 친구와 함께 핸드벨을 연주했습니다.
+“다음은 누구 차례예요?” “○○ 차례예요.”를 말하며 순서에 맞게 연주하는 힘이 자랐어요.
+함께 소통하는 힘 · 순서를 알고 차례를 지켜 대화하며 활동하기
+
+깨끗한 학교
+분리수거판을 만들고 ‘이건 뭐예요?’, ‘어디에 버려요?’ 묻고 답하며 분류법을 익혔습니다.
+“어디에 버려요?” 질문을 듣고 안내판에서 알맞은 분리배출 칸을 스스로 찾아냈어요.
+함께 소통하는 힘 · 규칙을 알고 협력하며 분리수거 하기
+
+우리들의 동화
+그림책 속 인물의 감정을 알아보고 짝과 마주 보며 표정과 몸짓으로 표현했습니다.
+표현하는 친구와 눈을 맞추고 환하게 웃으며 분위기에 어울리게 반응했어요.
+함께 소통하는 힘 · 장면에 맞는 분위기를 알고 알맞게 표현하기
+
+우리들의 카페
+손님·점원·요리사 역할을 나누어 메뉴 카드로 주문하고 음식을 주고받았습니다.
+“무엇을 드릴까요?” 질문을 말하고 주문을 받아 손님에게 맞는 음식을 제공하는 역할을 차분히 해냈어요.
+함께 소통하는 힘 · 함께 카페를 운영하며 내 역할 해내기`;
+  $('paste').value=t; applyText(t); render(); say('예시 글을 넣었어요. 사진을 올리면 칸에 들어가요.');
+});
+$('reset').addEventListener('click',()=>{ S.cards=[{title:'',act:'',grow:'',skill:''}]; S.photos=[]; $('paste').value=''; say(''); render(); });
+render();
+</script>
+</body>
+</html>
